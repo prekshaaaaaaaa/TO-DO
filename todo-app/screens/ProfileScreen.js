@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
-import {View,Text,Image,Button,Alert,StyleSheet,ActivityIndicator,TextInput,} from 'react-native';
+import { View, Text, Image, Alert, StyleSheet, ActivityIndicator, TextInput, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
+import { useEffect } from 'react';
 
 // Import Firebase services
 import { auth, db, storage } from '../firebaseConfig';
@@ -59,6 +61,17 @@ const ProfileScreen = () => {
       })();
     }, [])
   );
+
+  // Listen for changes to userName in AsyncStorage and update instantly
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const cachedName = await AsyncStorage.getItem('userName');
+      if (cachedName && cachedName !== name) {
+        setName(cachedName);
+      }
+    }, 1000); // check every second
+    return () => clearInterval(interval);
+  }, [name]);
 
   // Handle profile image upload
   const handleUploadPhoto = async () => {
@@ -131,94 +144,213 @@ const ProfileScreen = () => {
     }
   };
 
+  // Helper to get initial
+  const getInitial = () => {
+    if (name && name.length > 0) return name[0].toUpperCase();
+    if (email && email.length > 0) return email[0].toUpperCase();
+    return 'U';
+  };
+
   return (
     <View style={styles.container}>
-      {/* Profile image section */}
-      <View style={styles.profileSection}>
-        {profileImage ? (
-          <Image source={{ uri: profileImage }} style={styles.profileImage} />
-        ) : (
-          <View style={styles.placeholderImage} />
-        )}
-        {uploading && <ActivityIndicator style={{ marginTop: 10 }} />}
-        <Button title="Upload Photo" onPress={handleUploadPhoto} disabled={uploading} />
+      {/* Pink top section with avatar and decorative circles */}
+      <View style={styles.topSection}>
+        {/* Decorative circles/ellipses */}
+        <View style={styles.headerCircle1} />
+        <View style={styles.headerCircle2} />
+        <View style={styles.headerCircle3} />
+        <View style={styles.avatarWrapper}>
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>{getInitial()}</Text>
+            </View>
+          )}
+        </View>
       </View>
-      {/* User info section */}
-      <View style={styles.infoSection}>
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.value}>{email}</Text>
-        <Text style={styles.label}>Name:</Text>
-        {editingName ? (
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            onBlur={handleSaveName}
-            autoFocus
-            placeholder="Enter your name"
-          />
-        ) : (
-          <View style={styles.nameRow}>
-            <Text style={styles.value}>{name}</Text>
-            <Button title="Edit" onPress={() => setEditingName(true)} />
-          </View>
-        )}
+      {/* Input fields */}
+      <View style={styles.formSection}>
+        {/* Name field with icon and edit */}
+        <View style={styles.inputRow}>
+          <FontAwesome name="user" size={22} color="#f3439b" style={styles.inputIcon} />
+          {editingName ? (
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              onBlur={handleSaveName}
+              autoFocus
+              placeholder="Name"
+              placeholderTextColor="#f3439b"
+            />
+          ) : (
+            <Text style={[styles.input, { color: name ? '#222' : '#aaa' }]}>{name || 'Name'}</Text>
+          )}
+          <TouchableOpacity onPress={() => setEditingName(true)} style={styles.editIconBtn}>
+            <Feather name="edit-2" size={20} color="#f3439b" />
+          </TouchableOpacity>
+        </View>
+        {/* Email field with icon */}
+        <View style={styles.inputRow}>
+          <MaterialIcons name="email" size={22} color="#f3439b" style={styles.inputIcon} />
+          <Text style={[styles.input, { color: '#222' }]}>{email}</Text>
+        </View>
+        {/* Upload New Photo button */}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleUploadPhoto}
+          disabled={uploading}
+          activeOpacity={0.8}
+        >
+          <Feather name="camera" size={22} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={styles.buttonText}>Upload New Photo</Text>
+          {uploading && <ActivityIndicator color="#fff" style={{ marginLeft: 10 }} />}
+        </TouchableOpacity>
+        {/* Log Out button */}
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 15 }]}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="logout" size={22} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={styles.buttonText}>Log Out</Text>
+        </TouchableOpacity>
       </View>
-      {/* Logout button */}
-      <Button title="Log Out" onPress={handleLogout} color="#f3439b" />
     </View>
   );
 };
 
-// Basic styles for layout and appearance
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  topSection: {
+    backgroundColor: '#f9b6d2',
     alignItems: 'center',
-    padding: 20,
+    paddingTop: 70,
+    paddingBottom: 80,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  profileSection: {
+  headerCircle1: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    width: 70,
+    height: 40,
+    borderRadius: 35,
+    backgroundColor: '#f7c7de',
+    opacity: 0.7,
+  },
+  headerCircle2: {
+    position: 'absolute',
+    top: 60,
+    right: 40,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    opacity: 0.3,
+  },
+  headerCircle3: {
+    position: 'absolute',
+    top: 90,
+    left: 100,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#fff',
+    opacity: 0.2,
+  },
+  avatarWrapper: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    marginBottom: 30,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 10,
-    backgroundColor: '#eee',
-  },
-  placeholderImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 10,
-    backgroundColor: '#eee',
-  },
-  infoSection: {
-    width: '100%',
-    marginBottom: 30,
-  },
-  label: {
-    fontWeight: 'bold',
-    fontSize: 16,
+    justifyContent: 'center',
+    shadowColor: '#f3439b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
     marginTop: 10,
   },
-  value: {
-    fontSize: 16,
-    marginBottom: 10,
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#eee',
   },
-  input: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    fontSize: 16,
-    padding: 5,
-    marginBottom: 10,
+  avatarPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#f3439b',
   },
-  nameRow: {
+  avatarInitial: {
+    fontSize: 60,
+    color: '#f3439b',
+    fontWeight: 'bold',
+  },
+  formSection: {
+    flex: 1,
+    paddingHorizontal: 24,
+    marginTop: 30,
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#f9b6d2',
+    borderRadius: 30,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+    height: 54,
+    shadowColor: '#f9b6d2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 18,
+    color: '#f3439b',
+  },
+  editIconBtn: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3439b',
+    borderRadius: 30,
+    height: 54,
+    marginTop: 10,
+    marginBottom: 0,
+    shadowColor: '#f3439b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
