@@ -1,4 +1,3 @@
-// TodoScreen: Main to-do list screen with calendar, profile, and theme toggle
 import React, { useRef, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Animated, Pressable, TouchableWithoutFeedback, Image, Alert } from 'react-native';
 import { Calendar } from 'react-native-calendars';
@@ -150,31 +149,65 @@ const TodoScreen = ({ isDarkTheme, setIsDarkTheme }) => {
                   }}
                   markedDates={{
                     ...markedDates,
-                    [selectedDate]: {
-                      ...markedDates[selectedDate],
-                      selected: true,
-                      selectedColor: '#f3439b',
-                    },
                   }}
                   theme={{
                     todayTextColor: '#f3439b',
                   }}
                   dayComponent={({ date, state }) => {
-                    // Cross out past dates
                     const today = new Date();
                     const thisDate = new Date(date.dateString);
-                    const isPast = thisDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    const isToday =
+                      thisDate.getFullYear() === today.getFullYear() &&
+                      thisDate.getMonth() === today.getMonth() &&
+                      thisDate.getDate() === today.getDate();
+                    const isSelected = date.dateString === selectedDate;
+                    const showCircle = isSelected || (!selectedDate && isToday);
+                    const isMarked = !!markedDates[date.dateString]?.marked;
                     return (
-                      <View>
-                        <Text
+                      <View style={{ alignItems: 'center', width: 32, height: 34, justifyContent: 'flex-start' }}>
+                        <Pressable
+                          onPress={() => {
+                            const today = new Date();
+                            const clickedDate = new Date(date.dateString);
+                            today.setHours(0,0,0,0);
+                            clickedDate.setHours(0,0,0,0);
+                            if (clickedDate < today) {
+                              Alert.alert("Not Allowed", "Tasks cannot be added in the past");
+                              return;
+                            }
+                            setSelectedDate(date.dateString);
+                          }}
                           style={{
-                            textDecorationLine: isPast ? 'line-through' : 'none',
-                            color: state === 'disabled' ? '#d9e1e8' : isPast ? '#888' : '#2d4150',
-                            textAlign: 'center',
+                            width: 28,
+                            height: 28,
+                            borderRadius: 14,
+                            backgroundColor: showCircle ? '#f3439b' : 'transparent',
+                            justifyContent: 'center',
+                            alignItems: 'center',
                           }}
                         >
-                          {date.day}
-                        </Text>
+                          <Text
+                            style={{
+                              color: showCircle ? '#fff' : state === 'disabled' ? '#d9e1e8' : '#2d4150',
+                              fontWeight: showCircle ? 'bold' : 'normal',
+                              fontSize: 13,
+                              lineHeight: 13,
+                            }}
+                          >
+                            {date.day}
+                          </Text>
+                        </Pressable>
+                        {isMarked && (
+                          <View
+                            style={{
+                              width: 5,
+                              height: 5,
+                              borderRadius: 2.5,
+                              backgroundColor: markedDates[date.dateString]?.dotColor || '#f06292',
+                              marginTop: 1,
+                            }}
+                          />
+                        )}
                       </View>
                     );
                   }}
@@ -242,7 +275,7 @@ const styles = StyleSheet.create({
   },
   calendarWrapper: {
     flex: 1,
-    marginTop: 10,
+    marginTop: -10, // shift up by 20px from previous 10px
     padding: 10,
   },
   calendar: {
